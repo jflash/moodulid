@@ -1,8 +1,6 @@
 <?php
 /**
-	Käesoleva loomingu autoriõigused kuuluvad Revo Rästale ja Aktsiamaailm OÜ-le
-	Litsentsitingimused on saadaval http://www.e-abi.ee/litsents
-	@version 1.0
+
 */
 defined('_JEXEC') or die('Restricted access');
 if (!class_exists('vmPSPlugin')) {

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <extension version="2.5" type="plugin" group="vmpayment" method="upgrade">
     <name>VM - Payment SAMPO</name>
-    <creationDate>Jaanuar 2011</creationDate>
-    <author>Aktsiamaailm OÜ</author>
-    <authorUrl>http://e-abi.ee/</authorUrl>
-    <copyright>Copyright (C) 2011 Aktsiamaailm OÜ . All rights reserved.</copyright>
-    <license>http://www.e-abi.ee/litsents</license>
+    <creationDate></creationDate>
+    <author></author>
+    <authorUrl></authorUrl>
+    <copyright></copyright>
+    <license></license>
     <version>0</version>
     <description>SAMPO Pangalink Virtuemart 3.x-le</description>
     <languages>

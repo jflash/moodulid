@@ -2,11 +2,11 @@
 
 /**
 
-	Käesoleva loomingu autoriõigused kuuluvad Revo Rästale ja Aktsiamaailm OÜ-le
 
-	Litsentsitingimused on saadaval http://www.e-abi.ee/litsents
 
-	@version 1.0
+
+
+
 
 */
 

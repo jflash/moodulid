@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <extension version="2.5" type="plugin" group="vmshipment" method="upgrade">
     <name>Omniva module for Virtuemart</name>
-    <creationDate>Märts 2012</creationDate>
-    <author>Aktsiamaailm OÜ</author>
-    <authorUrl>http://www.e-abi.ee</authorUrl>
-    <copyright>Copyright (C) 2012 Aktsiamaailm OÜ All rights reserved.</copyright>
-    <license>http://www.e-abi.ee/litsents Single User License</license>
-    <version>1.0</version>
+    <creationDate></creationDate>
+    <author></author>
+    <authorUrl></authorUrl>
+    <copyright></copyright>
+    <license></license>
+    <version></version>
     <description>Omniva module for Virtuemart 3.x</description>
     <languages>
     <language tag="en-GB">en-GB.plg_vmshipment_post24.ini</language>
