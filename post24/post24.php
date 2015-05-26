@@ -517,7 +517,7 @@ class plgVmShipmentpost24 extends vmPSPlugin {
                      if (count($parcelTerminals) == 0 && file_exists("post24cache.txt")) {
                             $parcelTerminals = unserialize(file_get_contents('post24cache.txt'));
                             if (!is_array($parcelTerminals)) {
-                                   echo 'Omniva serverist pakiautomaatide laadimine ebaõnnestus';
+                                   echo 'Pakiautomaatide laadimine Omniva serverist ebaõnnestus';
                             }
                      }
                      $body = serialize($parcelTerminals);
