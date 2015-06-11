@@ -1,17 +1,40 @@
-<?php /**
- * Käesoleva loomingu autoriõigused kuuluvad Revo Rästale ja Aktsiamaailm OÜ-le
- * Litsentsitingimused on saadaval http://www.e-abi.ee/litsents
- * @version 1.0
- */
-if (!defined('_JEXEC'))
-       die('Direct Access to '.basename(__file__).' is not allowed.');
-if (!class_exists('vmPSPlugin'))
-       require (JPATH_VM_PLUGINS.DS.'vmpsplugin.php');
+<?php
+/**
+ * @package VirtueMart lisa
+ * @author Matis Halmann - http://www.e-abi.ee/ (kuni 2014)
+ * @author Joomla Eesti kogukond - http://www.eraser.ee/ (alates 2015)
+ * @copyright (C) 2015- Joomla Eesti kogukond
+ * @version 3.0
+ * @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+**/
+
+defined ('_JEXEC') or die('Restricted access');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if (!class_exists ('vmPSPlugin')) {
+	require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
+}
+
+
+
+
 class plgVmShipmentSmartpost extends vmPSPlugin {
        // instance of class
        public static $_this = false;
-       function __construct(&$subject, $config) {
-              parent::__construct($subject, $config);
+       function __construct(& $subject, $config) {
+              parent::__construct ($subject, $config);
               $this->_loggable = true;
               $this->tableFields = array_keys($this->getTableSQLFields());
               $varsToPush = array(
@@ -28,20 +51,21 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
                      'tax_id' => array('', 'int'));
               $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
        }
-       protected function getVmPluginCreateTableSQL() {
+       public function getVmPluginCreateTableSQL() {
               return $this->createTableSQL('Table for Itella SmartPOST');
        }
        function getTableSQLFields() {
               $SQLfields = array(
-                     'id' => ' int(11) unsigned NOT NULL AUTO_INCREMENT',
-                     'virtuemart_order_id' => 'int(11) UNSIGNED DEFAULT NULL',
-                     'order_number' => 'char(32) DEFAULT NULL',
+                     'id'                           => ' int(11) unsigned NOT NULL AUTO_INCREMENT',
+                     'virtuemart_order_id'          => 'int(11) UNSIGNED DEFAULT NULL',
+                     'order_number'                 => 'char(32) DEFAULT NULL',
                      'virtuemart_shipmentmethod_id' => 'int(11) UNSIGNED DEFAULT NULL',
-                     'shipment_name' => 'char(255) NOT NULL DEFAULT \'\' ',
-                     'selected_parcel' => 'int UNSIGNED DEFAULT NULL',
-                     'phone' => 'int(11) UNSIGNED DEFAULT NULL',
-                     'shipment_package_fee' => 'decimal(10,2) DEFAULT NULL',
-                     'tax_id' => 'int(11) DEFAULT NULL');
+                     'shipment_name'                => 'char(255) NOT NULL DEFAULT \'\' ',
+                     'selected_parcel'              => 'int(11) UNSIGNED DEFAULT NULL',
+                     'phone'                        => 'int(11) UNSIGNED DEFAULT NULL',
+                     'shipment_package_fee'         => 'decimal(10,2) DEFAULT NULL',
+                     'tax_id'                       => 'int(11) DEFAULT NULL'
+              );
               return $SQLfields;
        }
        public function plgVmOnShowOrderFEShipment($virtuemart_order_id, $virtuemart_shipmentmethod_id,
@@ -58,7 +82,9 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
               $values['virtuemart_shipment_id'] = $order['details']['BT']->virtuemart_shipmentmethod_id;
               $values['virtuemart_shipmentmethod_id'] = $shipping_id;
               $values['shipment_name'] = $this->renderPluginName($method);
-              $values['selected_parcel'] = $_SESSION['smartpost_selected_parcel'];
+              $session = JFactory::getSession();
+              $values['selected_parcel'] = $session->get('smartpost_selected_parcel');
+              //$values['selected_parcel'] = $_SESSION['smartpost_selected_parcel'];
               if (isset($order['details']['BT']->phone_1)) {
                      $phone = $order['details']['BT']->phone_1;
               } else {
@@ -67,7 +93,9 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
               $values['phone'] = $phone;
               $values['shipment_package_fee'] = $method->package_fee;
               $values['tax_id'] = $method->tax_id;
-              unset($_SESSION['smartpost_selected_parcel']);
+              $session = JFactory::getSession();
+              $session->clear('smartpost_selected_parcel');
+              //unset($_SESSION['smartpost_selected_parcel']);
               $this->storePSPluginInternalData($values);
               return true;
        }
@@ -79,28 +107,29 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
               return $html;
        }
        function getOrderShipmentHtml($virtuemart_order_id) {
+       
               $db = JFactory::getDBO();
               $q = 'SELECT * FROM `'.$this->_tablename.'` '.'WHERE `virtuemart_order_id` = '.
                      $virtuemart_order_id;
               $db->setQuery($q);
-              if (!($method = $db->loadObject())) {
+              if (!($shipinfo = $db->loadObject())) {
                      vmWarn(500, $q." ".$db->getErrorMsg());
                      return '';
               }
               if (!class_exists('CurrencyDisplay'))
                      require (JPATH_VM_ADMINISTRATOR.DS.'helpers'.DS.'currencydisplay.php');
               $currency = CurrencyDisplay::getInstance();
-              $tax = ShopFunctions::getTaxByID($method->tax_id);
-              $taxDisplay = is_array($tax)?$tax['calc_value'].' '.$tax['calc_value_mathop']:$method->tax_id;
+              $tax = ShopFunctions::getTaxByID($shipinfo->tax_id);
+              $taxDisplay = is_array($tax)?$tax['calc_value'].' '.$tax['calc_value_mathop']:$shipinfo->tax_id;
               $taxDisplay = ($taxDisplay == -1)?JText::_('COM_VIRTUEMART_PRODUCT_TAX_NONE'):$taxDisplay;
               //geting selected parcel
               $parcels = $this->_quote();
-              $title = $parcels[$method->selected_parcel]['title'];
-              $html = '<table class="adminlist">'."\n";
+              $title = $parcels[$shipinfo->selected_parcel]['title'];
+              $html = '<table class="adminlist table">'."\n";
               $html .= $this->getHtmlHeaderBE();
               $html .= $this->getHtmlRowBE('SMARTPOST_SM', 'Itella SmartPOST');
               $html .= $this->getHtmlRowBE('SMARTPOST_SELECTED_PARCEL', $title);
-              $html .= $this->getHtmlRowBE('SMARTPOST_TOPHONE', $method->phone);
+              $html .= $this->getHtmlRowBE('SMARTPOST_TOPHONE', $shipinfo->phone);
               $html .= '</table>'."\n";
               return $html;
        }
@@ -135,6 +164,11 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
                             $prodSize['dimensions']['l']);
                      sort($size);
                      //swap the sizes
+                     
+                     
+                     
+                     
+                     
                      if ($prodSize['unit'] == "M") {
                             $ex = '100';
                      } elseif ($prodSize['unit'] == 'CM') {
@@ -209,8 +243,10 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
               }
               //For Itella SmartPOST
               $prodSizes = $this->getProductSizes($cart);
-              if (!is_array($prodSizes) || !$this->_isShippable($prodSizes)) {
-				return false;
+              if (!is_array($prodSizes)) { // || !$this->_isShippable($prodSizes)) {
+                     if (!$this->_isShippable($prodSizes)) {
+                      			return false;
+                     }
               }
               return false;
        }
@@ -250,23 +286,35 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
         */
        public function plgVmOnSelectCheckShipment(VirtueMartCart $cart) {
               //get smartpost id
-              $smart_id = $_REQUEST['virtuemart_shipmentmethod_id'];
+              //$smart_id = JRequest::getVar('virtuemart_shipmentmethod_id');
+              $smart_id = JFactory::getApplication()->input->post->get('virtuemart_shipmentmethod_id');
+              //$smart_id = $_REQUEST['virtuemart_shipmentmethod_id'];
               if (!$method = $this->getVmPluginMethod($smart_id)) {
-                     unset($_SESSION['smartpost_selected_parcel']);
+                     $session = JFactory::getSession();
+                     $session->clear('smartpost_selected_parcel');
+                     //unset($_SESSION['smartpost_selected_parcel']);
                      return null; // Another method was selected, do nothing
               }
               if (!$this->selectedThisElement($method->shipment_element)) {
-                     unset($_SESSION['smartpost_selected_parcel']); //unset selected parcel because another method was selected.
-                     return true;
+                     $session = JFactory::getSession();
+                     $session->clear('smartpost_selected_parcel');
+                    //unset($_SESSION['smartpost_selected_parcel']); //unset selected parcel because another method was selected.
+                     return false; //jflash
               }
-              //for no errors let's disable estonian smartpost
-              $selected_parcel = $_REQUEST['srates'];
+              //for no errors let's disable estonian smartpost      
+              //$selected_parcel = JRequest::getVar('srates');
+              $selected_parcel = JFactory::getApplication()->input->post->get('srates');
+              //$selected_parcel = $_REQUEST['srates'];
               if ($selected_parcel == 0 && $this->selectedThisElement($method->shipment_element) ==
                      1) {
                      JError::raiseWarning(100, "Please select Itella SmartPOST parcel");
-                     unset($_SESSION['smartpost_selected_parcel']);
+                     $session = JFactory::getSession();
+                     $session->clear('smartpost_selected_parcel');
+                     //unset($_SESSION['smartpost_selected_parcel']);
               }
-              $_SESSION['smartpost_selected_parcel'] = $selected_parcel;
+              $session = JFactory::getSession();
+              $session->set('smartpost_selected_parcel', $selected_parcel);
+              //$_SESSION['smartpost_selected_parcel'] = $selected_parcel;
               return $this->OnSelectCheck($cart);
        }
        public function control_size($cart) {
@@ -278,24 +326,22 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
                             $sizes['dimensions']['l']);
                      sort($size);
                      
-				  if (is_array($size)) {
-						 if (max($size) > 60) {
+				        if (is_array($size)) {
+						    if (max($size) > 60) {
 								return false;
-						 }
-				  }
+						    }
+				        }
                      
               }
-			  return true;
+			        return true;
        }
-       public function plgVmDisplayListFEShipment(VirtueMartCart $cart, $selected = 0,
-              &$htmlIn) {
+       public function plgVmDisplayListFEShipment(VirtueMartCart $cart, $selected = 0, &$htmlIn) {
               //get Itella SmartPOST id
               $smart_id = $this->get_smart_id();
               if (!($method = $this->getVmPluginMethod($smart_id))) {
                      return null; // Another method was selected, do nothing
               }
-              if (!$this->selectedThisElement($method->shipment_element) || $method->published ==
-                     0) {
+              if (!$this->selectedThisElement($method->shipment_element) || $method->published ==0) {
                      return null;
               }
               if (!$this->control_size($cart)) {
@@ -330,7 +376,9 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
                      $result = $dbu->loadResult();
                      $country_3_code = $result;
               }
-              if ($_SESSION['auth']['show_price_including_tax'] != 1) {
+              $session = JFactory::getSession();
+              if ($session->get('auth','show_price_including_tax') != 1) {
+              //if ($_SESSION['auth']['show_price_including_tax'] != 1) {
                      $taxrate = 1;
                      $order_total = $total + $tax_total;
               } else {
@@ -352,6 +400,8 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
               } else {
                      $Handling_Fee = $this->getCosts($cart, $method, $cart->prices);
               }
+                            $methodSalesPrice = $this->calculateSalesPrice($cart, $method, $cart->pricesUnformatted);
+				                    $Handling_Fee = $methodSalesPrice;
               $rates = $this->_quote();
               $formattedRates = array();
               $sRates = array();
@@ -366,17 +416,14 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
                      $html .= '<input type="radio" name="virtuemart_shipmentmethod_id" id="shipment_id_'.
                             $smart_id.'" value="'.$smart_id.'" checked="">';
               }
-              
-              
-				$methodSalesPrice = $this->calculateSalesPrice($cart, $method, $cart->pricesUnformatted);
-				$Handling_Fee = $methodSalesPrice;
-              
               $html .= '<label for="shipment_id_'.$smart_id.'"><span class="vmshipment">';
               $html .= '<span class="vmshipment_name">'.$method->Client_Title.'</span>';
               $html .= '<span class="vmshipment_description">';
-              $html .= $this->getSelect('srates', $formattedRates, $_SESSION['smartpost_selected_parcel'],
+              $session = JFactory::getSession();
+              $html .= $this->getSelect('srates', $formattedRates, $session->get('smartpost_selected_parcel'),
+              //$html .= $this->getSelect('srates', $formattedRates, $_SESSION['smartpost_selected_parcel'],
                      "style='width: 200px;' id='smpselect' onChange='jQuery(\"#shipment_id_".$smart_id.
-                     "\").attr(\"checked\",\"\");' onClick='jQuery(\"#shipment_id_".$smart_id."\").attr(\"checked\",\"\"); return false;'");
+                     "\").attr(\"checked\",\"\"); return false;' onClick='jQuery(\"#shipment_id_".$smart_id."\").attr(\"checked\",\"\"); return false;'");
               $html .= '</span>';
               $html .= '<span class="vmshipment_cost">('.JText::_('VMSHIPMENT_SMARTPOST_FEE').
                      number_format($Handling_Fee, 2, ",", "").' €)</span></span></label>';
@@ -432,22 +479,24 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
        function plgVmDeclarePluginParamsShipment($name, $id, &$data) {
               return $this->declarePluginParams('shipment', $name, $id, $data);
        }
+      function plgVmDeclarePluginParamsShipmentVM3 (&$data) {
+		  return $this->declarePluginParams ('shipment', $data);
+	     }
        function plgVmSetOnTablePluginParamsShipment($name, $id, &$table) {
               return $this->setOnTablePluginParams($name, $id, $table);
        }
-              function _quote($city = '', $state = '') {
+       function _quote($city = '', $state = '') {
               $smart_id = $this->get_smart_id();
               if (!($method = $this->getVmPluginMethod($smart_id))) {
                      return null; // Another method was selected, do nothing
               }
-              if ($city === null)
-                     $city = '';
-              if ($state === null)
-                     $state = '';
+             if ($city === NULL) $city = '';
+              if ($state === NULL) $state = '';
+              
+              
               $city = htmlentities($city, ENT_COMPAT, "UTF-8");
               $state = htmlentities($state, ENT_COMPAT, "UTF-8");
-              if (file_exists("smpostcache.txt") && (time() - filemtime("smpostcache.txt")) <
-                     86400) {
+              if (file_exists("smpostcache.txt") && (time() - filemtime("smpostcache.txt")) < 86400) {
                      $body = file_get_contents("smpostcache.txt");
               } else {
                      $body = file_get_contents("http://www.smartpost.ee/places.php");
@@ -455,6 +504,27 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
                             file_put_contents("smpostcache.txt", $body);
                      }
               }
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
               $response = unserialize($body);
               $result = array();
               foreach ($response as $r) {
@@ -488,8 +558,21 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
               }
               return $result;
        }
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
        public function get_smart_id() {
-              $database = &JFactory::getDBO();
+              $database = JFactory::getDBO();
               $qs = "SELECT virtuemart_shipmentmethod_id as smartid FROM #__virtuemart_shipmentmethods WHERE shipment_element='smartpost' LIMIT 1";
               $database->setQuery($qs);
               $smart_id = $database->loadResult();
@@ -498,7 +581,44 @@ class plgVmShipmentSmartpost extends vmPSPlugin {
        public function debug($what) {
               echo '<pre>';
               print_r($what);
-              echo '</pre';
+              echo '</pre>';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
        }
 }
 // No closing tag

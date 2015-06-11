@@ -1,14 +1,12 @@
 <?php
-
 /**
-
-	Käesoleva loomingu autoriõigused kuuluvad Revo Rästale ja Aktsiamaailm OÜ-le
-
-	Litsentsitingimused on saadaval http://www.e-abi.ee/litsents
-
-	@version 1.0
-
-*/
+ * @package VirtueMart lisa
+ * @author Matis Halmann - http://www.e-abi.ee/ (kuni 2014)
+ * @author Joomla Eesti kogukond - http://www.eraser.ee/ (alates 2015)
+ * @copyright (C) 2015- Joomla Eesti kogukond
+ * @version 3.0
+ * @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+**/
 
 /*
 	AIM:

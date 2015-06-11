@@ -1,20 +1,17 @@
 <?php
-
-/*
-  @license@
- */
-
-if (!defined('_VALID_MOS') && !defined('_JEXEC'))
-    die('Direct Access to ' . basename(__FILE__) . ' is not allowed.');
-if (!class_exists('vmPSPlugin'))
-    require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
-
-
 /**
- * Description of maksekeskus
- *
- * @author Matis
- */
+ * @package VirtueMart lisa
+ * @author Matis Halmann - http://www.e-abi.ee/ (kuni 2014)
+ * @author Joomla Eesti kogukond - http://www.eraser.ee/ (alates 2015)
+ * @copyright (C) 2015- Joomla Eesti kogukond
+ * @version 3.0
+ * @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+**/
+
+defined('_JEXEC') or die('Restricted access');
+if (!class_exists('vmPSPlugin')) {
+	require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
+}
 class plgVmPaymentmaksekeskus extends vmPSPlugin {
 
     protected $_destination_url;
@@ -25,7 +22,7 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
     
     private $_variablesInited = false;
     
-    public function __construct(&$subject, $config) {
+    function __construct(&$subject, $config) {
         parent::__construct($subject, $config);
     	JFactory::getLanguage()->load('com_virtuemart', JPATH_ADMINISTRATOR);
         $this->_loggable = true;
@@ -44,8 +41,8 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
         $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
     }
 
-    protected function getVmPluginCreateTableSQL() {
-        return $this->createTableSQL('Payment MAKSEKESKUSSWtable');
+    public function getVmPluginCreateTableSQL() {
+        return $this->createTableSQL('Payment MAKSEKESKUS table');
     }
 
     function getTableSQLFields() {
@@ -63,7 +60,6 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
         );
         return $SQLfields;
     }
-    
     function plgVmConfirmedOrder($cart, $order) {
     	if (!($method = $this->getVmPluginMethod($order['details']['BT']->virtuemart_paymentmethod_id))) {
     	    return null;
@@ -79,8 +75,9 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
             'payment_currency' => $this->_currency,
         );
         $this->storePSPluginInternalData($orderPaymentValues);
-    	if (!class_exists('VirtueMartModelCurrency'))
-    	    require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
+    	if (!class_exists('VirtueMartModelCurrency')) {
+    	    require(VMPATH_ADMIN . DS . 'models' . DS . 'currency.php');
+          }
     	$currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
         
     	$html = '<table>' . "\n";
@@ -111,7 +108,7 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
         $html .= "</br>";
         $html .= '<input type="submit" value="'.JText::_("MAKSEKESKUS_SUBMIT").'"/>' ;
         $html .= '</form>';
-        JRequest::setVar('html', $html);
+        vRequest::setVar('html', $html);
     }
     
     function plgVmOnShowOrderBEPayment($virtuemart_order_id, $virtuemart_payment_id) {
@@ -142,7 +139,7 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
     
     function plgVmOnPaymentResponseReceived(&$html) {
         if (!class_exists('VirtueMartModelOrders')) {
-            require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php');
+            require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
         }
 
 
@@ -259,6 +256,10 @@ class plgVmPaymentmaksekeskus extends vmPSPlugin {
     function plgVmDeclarePluginParamsPayment($name, $id, &$data) {
         return $this->declarePluginParams('payment', $name, $id, $data);
     }
+
+    function plgVmDeclarePluginParamsPaymentVM3( &$data) {
+	  	return $this->declarePluginParams('payment', $data);
+	  }
 
     function plgVmSetOnTablePluginParamsPayment($name, $id, &$table) {
         return $this->setOnTablePluginParams($name, $id, $table);

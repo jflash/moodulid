@@ -4,7 +4,7 @@
  * @author Matis Halmann - http://www.e-abi.ee/ (kuni 2014)
  * @author Joomla Eesti kogukond - http://www.eraser.ee/ (alates 2015)
  * @copyright (C) 2015- Joomla Eesti kogukond
- * @version 3
+ * @version 3.0
  * @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
 **/
 
@@ -12,11 +12,11 @@ defined('_JEXEC') or die('Restricted access');
 if (!class_exists('vmPSPlugin')) {
 	require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
 }
-class plgVmPaymentnordea extends vmPSPlugin {
+class plgVmPaymentseb extends vmPSPlugin {
     // instance of class
     public static $_this = false;
-    var $bank_down='nor';
-    var $bank_UPPER='NOR';
+    var $bank_down='seb';
+    var $bank_UPPER='SEB';
     function __construct(& $subject, $config) {
 	   parent::__construct($subject, $config);
 	    $this->_loggable = true;
@@ -28,10 +28,8 @@ class plgVmPaymentnordea extends vmPSPlugin {
 		    'priv_key' => array('', 'text'),
 		    'pub_key' => array('', 'text'),
 		    'VK_SND_ID' => array('', 'string'),
-		    'priv_pass' => array('', 'string'),
+        'priv_pass' => array('', 'string'),
         'countries' => array('', 'string'),
-		    'keyvar' => array(0,'int'),
-		    'nlang'=>array(0,'string'),
         'return' =>array('','text'),
         'cancel' =>array('',"text"),
         'url' =>array('','text')
@@ -39,10 +37,10 @@ class plgVmPaymentnordea extends vmPSPlugin {
 	    $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
     }
 //     protected function getVmPluginCreateTableSQL() {
-// 	   return $this->createTableSQL('Payment Nordea table');
+// 	   return $this->createTableSQL('Payment Seb table');
 //     }
 	public function getVmPluginCreateTableSQL() {
-		return $this->createTableSQL('Payment Nordea table');
+		return $this->createTableSQL('Payment Seb table');
 	}
 
     function getTableSQLFields() {
@@ -91,13 +89,13 @@ VmConfig::loadJLang('com_virtuemart_orders', TRUE);
     	$dbValues['VK_SND_ID'] = $method->VK_SND_ID;
     	$dbValues['payment_currency'] = $method->payment_currency;
     	$dbValues['pub_key'] = $method->pub_key;
-    	$dbValues['keyvar']=$method->keyvar;
-    	$dbValues['nlang']=$method->nlang;
+    	$dbValues['priv_key'] = $method->priv_key;
+      $dbValues['cancel']=$method->cancel;
       $dbValues['url']=$method->url;
       $dbValues['return']=$method->return;
     	$this->storePSPluginInternalData($dbValues);
     	$html = '<table>' . "\n";
-    	$html .= $this->getHtmlRow('NORDEA_PAYMENT_INFO', $dbValues['payment_name']);
+    	$html .= $this->getHtmlRow('SEB_PAYMENT_INFO', $dbValues['payment_name']);
     	if (!empty($payment_info)) {
     	    $lang = JFactory::getLanguage();
     	   if ($lang->hasKey($method->payment_info)) {
@@ -107,72 +105,42 @@ VmConfig::loadJLang('com_virtuemart_orders', TRUE);
     	   }
     	    $html .= $this->getHtmlRow($bank_UPPER._PAYMENTINFO, $payment_info);
     	}
-    	//currency
-    	$db = JFactory::getDBO();
-		$q = 'SELECT `currency_code_3` FROM `#__virtuemart_currencies` WHERE `virtuemart_currency_id`="' . $method->payment_currency . '" ';
-		$db = &JFactory::getDBO();
-		$db->setQuery($q);
-		$currency_code_3 = $db->loadResult();
-    	
-    	//currency
     	if (!class_exists('VirtueMartModelCurrency')) {
     	    require(VMPATH_ADMIN . DS . 'models' . DS . 'currency.php');
           }
     	$currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
-    	$html .= $this->getHtmlRow('NORDEA_ORDER_NUMBER', $order['details']['BT']->order_number);
-    	$html .= $this->getHtmlRow('NORDEA_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
+    	$html .= $this->getHtmlRow('SEB_ORDER_NUMBER', $order['details']['BT']->order_number);
+    	$html .= $this->getHtmlRow('SEB_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
     	$html .= '</table>' . "\n";
         $paymentCurrency = CurrencyDisplay::getInstance($method->payment_currency);
     	$totalInPaymentCurrency = round($paymentCurrency->convertCurrencyTo($method->payment_currency, $order['details']['BT']->order_total,false), 2);
         $bank_order_id= VirtueMartModelOrders::getOrderIdByOrderNumber($order['details']['BT']->order_number);
-        $VK_a['SOLOPMT_VERSION'] = '0003';
-        $VK_a['SOLOPMT_STAMP'] = hexdec($bank_order_id);
-	      $VK_a['SOLOPMT_RCV_ID']=$method->VK_SND_ID;
-      	$VK_a['SOLOPMT_LANGUAGE']=$method->nlang;
-      	$VK_a['SOLOPMT_AMOUNT']=$totalInPaymentCurrency;
-      	$VK_a['SOLOPMT_REF']=$this->generateRefNum($bank_order_id);
-      	$VK_a['SOLOPMT_DATE']="EXPRESS";
-      	$VK_a['SOLOPMT_MSG']="Arve ".$bank_order_id." tasumine";
-      	$VK_a['SOLOPMT_RETURN']=JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived');
-      	$VK_a['SOLOPMT_CANCEL']=$VK_a['SOLOPMT_RETURN'];
-      	$VK_a['SOLOPMT_REJECT']=$VK_a['SOLOPMT_RETURN'];
-      	$VK_a['SOLOPMT_CONFIRM']="YES";
-      	$VK_a['SOLOPMT_KEYVERS']=$method->keyvar;
-      	$VK_a['SOLOPMT_CUR']=$currency_code_3;
-      	$VK_a['SOLOPMT_MAC']=$this->getSoloStartMac($VK_a,$method->keyvar,$method->priv_key);
+        $VK_a['VK_SERVICE'] = '1012';
+        $VK_a['VK_VERSION'] = '008';
+        $VK_a['VK_SND_ID'] = $dbValues['VK_SND_ID'];
+        $VK_a['VK_STAMP'] = hexdec($bank_order_id);
+        $VK_a['VK_AMOUNT'] = $totalInPaymentCurrency;
+        $VK_a['VK_CURR'] = 'EUR';
+        $VK_a['VK_REF'] = $this->generateRefNum($bank_order_id);
+        $VK_a['VK_MSG'] = "Arve ". $bank_order_id. " tasumine";
+        $VK_a['VK_RETURN'] = JROUTE::_(JURI::root() . 'plugins/vmpayment/seb/bank.php');
+        $VK_a['VK_CANCEL'] = $VK_a['VK_RETURN'];
+        $vkDateTime = new DateTime('NOW');
+        $VK_a['VK_DATETIME'] = $vkDateTime->format(DateTime::ISO8601); //date("Y-m-d H:i:s", time()); //ISO-8601 
+        $VK_a['VK_MAC'] = $this->createSignature($VK_a,$dbValues['priv_key'],$dbValues['priv_pass']);
+        $VK_a['VK_ENCODING'] = 'UTF-8';
+        $VK_a['VK_LANG'] = 'EST';
         $html.=( '<form method="post" action="'.$dbValues['url'].'">' );
         foreach( $VK_a as $VK_name => $VK_value ){
            $html.=( '<input type="hidden" name="' . htmlspecialchars($VK_name) . '" value="' . htmlspecialchars($VK_value) . '"/>'."\n"."\t" );
         }
         $html.=("</br>");
-        $html.= ('<input type="submit" value="'.JText::_("VMPAYMENT_NORDEA_SUBMIT").'"/>' );
+        $html.= ('<input type="submit" value="'.JText::_("VMPAYMENT_SEB_SUBMIT").'"/>' );
         $html.=( '</form>' );
         		vRequest::setVar ('html', $html);
 return TRUE;
 //    	return $this->processConfirmedOrderPaymentResponse(true, $cart, $order, $html, , $method->status_canceled);
     }
-    	function getSoloStartMac($params,$keyvar,$mac) {
-		$variableOrder = array(
-			'SOLOPMT_VERSION', 'SOLOPMT_STAMP', 'SOLOPMT_RCV_ID',
-			'SOLOPMT_AMOUNT', 'SOLOPMT_REF', 'SOLOPMT_DATE',
-			'SOLOPMT_CUR'
-		);
-		$res = '';
-		foreach ($variableOrder as $i) {
-			if (isset($params[$i])) {
-				$res .= $params[$i]."&";
-			}
-		}
-		$res .= $mac."&";
-		if ($keyvar == '0001') {
-			$res = md5($res);
-		} else {
-			$res = sha1($res);
-		}
-		return strtoupper($res);
-	}
-
-    
     function plgVmOnShowOrderBEPayment($virtuemart_order_id, $virtuemart_payment_id) {
    	if (!$this->selectedThisByMethodId($virtuemart_payment_id)) {
     	    return null; // Another method was selected, do nothing
@@ -189,7 +157,7 @@ return TRUE;
     	$this->getPaymentCurrency($paymentTable);
     	$html = '<table class="adminlist">' . "\n";
     	$html .=$this->getHtmlHeaderBE();
-    	$html .= $this->getHtmlRowBE('NORDEA_PAYMENT_NAME', $paymentTable->payment_name);
+    	$html .= $this->getHtmlRowBE('SEB_PAYMENT_NAME', $paymentTable->payment_name);
     	$html .= '</table>' . "\n";
     	return $html;
     }
@@ -237,6 +205,20 @@ return TRUE;
     function plgVmSetOnTablePluginParamsPayment($name, $id, &$table) {
 	   return $this->setOnTablePluginParams($name, $id, $table);
     }
+    function createSignature( &$VK_a,$priv,$pass ){
+      $data = $this->_composeData( $VK_a );
+      $pkeyid = openssl_pkey_get_private( $priv,$pass);
+      openssl_sign( $data, $signature, $pkeyid );
+      $VK_MAC = base64_encode( $signature );
+      openssl_free_key( $pkeyid );
+      return $VK_MAC;
+   }
+   function _composeData( &$VK_a ){
+      foreach( $VK_a as $data_bit ){
+         $data.=str_pad( strlen( $data_bit ), 3, "0", STR_PAD_LEFT ) . $data_bit;
+      }
+      return $data;
+   }
    function plgVmOnPaymentNotification(&$html) {
        return plgVmOnPaymentResponseReceived($html);
     }
@@ -252,65 +234,51 @@ return TRUE;
     	$lang->load($filename, JPATH_ADMINISTRATOR);
     	$vendorId = 0;
         $payment_data = JRequest::get('request');
-        $order_id = substr($payment_data['SOLOPMT_RETURN_REF'], 0, -1);
+        $order_id = substr($payment_data['VK_REF'], 0, -1);
         $pmethod=VirtueMartModelOrders::getOrder($order_id);
         $payment_method= $pmethod['details']['BT']->virtuemart_paymentmethod_id;
     	if (!($method = $this->getVmPluginMethod($payment_method))) {
     	    return null; // Another method was selected, do nothing
     	}
     	if (!$this->selectedThisElement($method->payment_element)) {
-    	    return false;    	 
+    	    return false;
     	}
-      
-      
+    	
+                
     	$payment_name = $this->renderPluginName($method);
-    	  $vk_array=array();
+        $vk_array=array();
         foreach ($payment_data as $key => $value) {
-            if (substr($key, 0, 8) == "SOLOPMT_") {
+            if (substr($key, 0, 3) == "VK_") {
                 $vk_array[$key]=$value;
             }
         }
-        $sig_result = $this->checkReturnMac($vk_array,$method->priv_key,$method->keyvar);
+        $sig_result = $this->signature_check($vk_array,$method->pub_key );
+        $html = '<table>' . "\n";
+            if($sig_result==0)
+                $html .= $this->getHtmlRow(SEB_BANK_ERROR," ");
+            $html .= '</table>' . "\n";
             $config =& JFactory::getConfig();
             $dbprefix =   $config->getValue( 'dbprefix' );
              $order= new VirtueMartModelOrders();
              $order=$order->getOrder($order_id);
              $cart = VirtueMartCart::getCart();
-            
-             //Currency
-             	$db = JFactory::getDBO();
-		$q = 'SELECT * FROM `' . $this->_tablename . '` '
-			. 'WHERE `virtuemart_order_id` = ' . $order_id;
-		$db->setQuery($q);
-		if (!($paymentTable = $db->loadObject())) {
-		   // JError::raiseWarning(500, $db->getErrorMsg());
-		    return '';
-		}
-		$this->getPaymentCurrency($paymentTable);
-		$q = 'SELECT `currency_code_3` FROM `#__virtuemart_currencies` WHERE `virtuemart_currency_id`="' . $paymentTable->payment_currency . '" ';
-		$db = &JFactory::getDBO();
-		$db->setQuery($q);
-		$currency_code_3 = $db->loadResult();
-             
-             //currency
-             
-            if($sig_result==true){
-            $html .= $this->_getPaymentResponseHtml($payment_data,$payment_name,round($order['details']['BT']->order_total,2),$currency_code_3);
-           
+            if($_REQUEST['VK_SERVICE']==1101 && $sig_result==1){
+            $html .= $this->_getPaymentResponseHtml($payment_data, $payment_name);
+                     if(isset($cart->_dataValidated)){
                          if($order['details']['BT']->order_status!=$method->status_success){
-                            $this->update_status($method->status_success,$order_id,"VMPAYMENT_NORDEA_PAYMENT_CONFIRMED");
+                            $this->update_status($method->status_success,$order_id,"VMPAYMENT_SEB_PAYMENT_CONFIRMED");
                         }
-                        echo JText::_("VMPAYMENT_NORDEA_SUCCESS_MESSAGE");
-                  echo $html;
-            }elseif($sig_result==false){// makse on tühistatud
+                        echo JText::_("VMPAYMENT_SEB_SUCCESS_MESSAGE");
+                    }
+            }elseif($_REQUEST['VK_SERVICE']==1901 && $sig_result==1){// makse on tühistatud
                 if($order['details']['BT']->order_status!=$method->status_canceled){
-            	   $this->update_status($method->status_canceled,$order_id,"VMPAYMENT_NORDEA_PAYMENT_CANCELED");
+            	   $this->update_status($method->status_canceled,$order_id,"VMPAYMENT_SEB_PAYMENT_CANCELED");
                 }
-                echo JText::_("VMPAYMENT_NORDEA_FAIL_MESSAGE");
+                echo JText::_("VMPAYMENT_SEB_FAIL_MESSAGE");
             }
             $cart->emptyCart();
             $url=JROUTE::_(JURI::root() .'index.php?option=com_virtuemart&view=orders');
-            echo '<head><meta http-equiv="Refresh" content="5;URL='.$url.'"></head>';
+            echo '<head><meta http-equiv="Refresh" content="1;URL='.$url.'"></head>';
 exit;
             return true;
    }
@@ -340,7 +308,7 @@ exit;
 
         return false;
     }
-    function update_status($status,$order_id,$text='VMPAYMENT_NORDEA_PAYMENT_CANCELED'){
+    function update_status($status,$order_id,$text='VMPAYMENT_SEB_PAYMENT_CANCELED'){
         if ($order_id) {
 	       // send the email only if payment has been accepted
 	       if (!class_exists('VirtueMartModelOrders'))
@@ -353,40 +321,55 @@ exit;
        	    $modelOrder->updateStatusForOneOrder($order_id, $order, true);
      	   }
     }
-    function _getPaymentResponseHtml($bank_data, $payment_name,$amount,$cur) {
+    function _getPaymentResponseHtml($bank_data, $payment_name) {
        	$html = '<table>' . "\n";
-    	$html .= $this->getHtmlRow(NORDEA_PAYMENT_NAME, $payment_name);
-        $stamp=dechex($bank_data['SOLOPMT_RETURN_STAMP']);//payment method number
-    	$html .= $this->getHtmlRow(NORDEA_ORDER_NUMBER, $stamp);
-    	$html .= $this->getHtmlRow(NORDEA_AMOUNT, $amount . " " . $cur);
+    	$html .= $this->getHtmlRow(SEB_PAYMENT_NAME, $payment_name);
+        $stamp=dechex($bank_data['VK_STAMP']);//payment method number
+    	$html .= $this->getHtmlRow(SEB_ORDER_NUMBER, $stamp);
+    	$html .= $this->getHtmlRow(SEB_AMOUNT, $bank_data['VK_AMOUNT'] . " " . $bank_data['VK_CURR']);
     	$html .= '</table>' . "\n";
     	return $html;
     }
-    function checkReturnMac($params,$mac,$keyvar) {
-		$variableOrder = array(
-			'SOLOPMT_RETURN_VERSION', 'SOLOPMT_RETURN_STAMP',
-			'SOLOPMT_RETURN_REF', 'SOLOPMT_RETURN_PAID'
-		);
-		$res = '';
-		foreach ($variableOrder as $i) {
-			if (isset($params[$i])) {
-				$res .= $params[$i]."&";
-			} else {
-				$res .= "&";
-			}
+    function generateMACString($macFields) {
+		$VK_variableOrder = Array(
+		1001 => Array(
+				'VK_SERVICE','VK_VERSION','VK_SND_ID',
+				'VK_STAMP','VK_AMOUNT','VK_CURR',
+				'VK_ACC','VK_NAME','VK_REF','VK_MSG'
+				),
+				1002 => Array(
+				'VK_SERVICE','VK_VERSION','VK_SND_ID',
+				'VK_STAMP','VK_AMOUNT','VK_CURR',
+				'VK_REF','VK_MSG'
+				),
+				1101 => Array(
+				'VK_SERVICE','VK_VERSION','VK_SND_ID',
+				'VK_REC_ID','VK_STAMP','VK_T_NO','VK_AMOUNT','VK_CURR',
+				'VK_REC_ACC','VK_REC_NAME','VK_SND_ACC','VK_SND_NAME',
+				'VK_REF','VK_MSG','VK_T_DATE'
+				),
+				1901 => Array(
+				'VK_SERVICE','VK_VERSION','VK_SND_ID',
+				'VK_REC_ID','VK_STAMP','VK_REF','VK_MSG'
+				),
+			);
+		$requestNum = $macFields['VK_SERVICE'];
+		$data = '';
+		foreach ((array)$VK_variableOrder[$requestNum] as $kaey) {
+			$v = $macFields[$kaey];
+			$data .= str_pad (strlen ($v), 3, '0', STR_PAD_LEFT) . $v;
 		}
-		$res .= $mac."&";
-		if ($keyvar == '0001') {
-			$res = md5($res);
-		} else {
-			$res = sha1($res);
-		}
-		if (isset($params['SOLOPMT_RETURN_MAC']) && strtoupper($res) == $params['SOLOPMT_RETURN_MAC']) {
-			return true;
-		} else {
-			return false;
-		}
+		return $data;
 	}
+    function signature_check($VK_a,$pub_key){
+        $VK_MAC = $VK_a['VK_MAC'];
+        $signature = base64_decode( $VK_MAC );
+        $data=$this->generateMACString($VK_a);
+        $pubkey = openssl_get_publickey( $pub_key );
+        $out = openssl_verify( $data, $signature, $pubkey );
+        openssl_free_key( $pubkey );
+        return $out;
+    }
 	function generateRefNum($stamp) {
 		$chcs = array(7, 3, 1);
 		$sum = 0;

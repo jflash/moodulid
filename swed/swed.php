@@ -1,13 +1,17 @@
 <?php
 /**
-	Käesoleva loomingu autoriõigused kuuluvad Revo Rästale ja Aktsiamaailm OÜ-le
-	Litsentsitingimused on saadaval http://www.e-abi.ee/litsents
-	@version 1.0
-*/
-if (!defined('_VALID_MOS') && !defined('_JEXEC'))
-    die('Direct Access to ' . basename(__FILE__) . ' is not allowed.');
-if (!class_exists('vmPSPlugin'))
-    require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
+ * @package VirtueMart lisa
+ * @author Matis Halmann - http://www.e-abi.ee/ (kuni 2014)
+ * @author Joomla Eesti kogukond - http://www.eraser.ee/ (alates 2015)
+ * @copyright (C) 2015- Joomla Eesti kogukond
+ * @version 3.0
+ * @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+**/
+
+defined('_JEXEC') or die('Restricted access');
+if (!class_exists('vmPSPlugin')) {
+	require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
+}
 class plgVmPaymentswed extends vmPSPlugin {
     // instance of class
     public static $_this = false;
@@ -21,10 +25,10 @@ class plgVmPaymentswed extends vmPSPlugin {
         'status_success' => array(0,"int"),
         'status_canceled' => array(0,"int"),
         'payment_logos'          => array('', 'char'),
-		'priv_key' => array('', 'text'),
-		'pub_key' => array('', 'text'),
-		'VK_SND_ID' => array('', 'string'),
-		'priv_pass' => array('', 'string'),
+		    'priv_key' => array('', 'text'),
+		    'pub_key' => array('', 'text'),
+		    'VK_SND_ID' => array('', 'string'),
+		    'priv_pass' => array('', 'string'),
         'countries' => array('', 'string'),
         'return' =>array('','text'),
         'cancel' =>array('',"text"),
@@ -32,9 +36,13 @@ class plgVmPaymentswed extends vmPSPlugin {
 	    );
 	    $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
     }
-    protected function getVmPluginCreateTableSQL() {
-	   return $this->createTableSQL('Payment SWEDSWtable');
-    }
+//     protected function getVmPluginCreateTableSQL() {
+// 	   return $this->createTableSQL('Payment SWEDSWtable');
+//     }
+	public function getVmPluginCreateTableSQL() {
+		return $this->createTableSQL('Payment Swed table');
+	}
+
     function getTableSQLFields() {
     	$SQLfields = array(
     	    'id' => 'int(11) unsigned NOT NULL AUTO_INCREMENT',
@@ -57,14 +65,16 @@ class plgVmPaymentswed extends vmPSPlugin {
     	if (!$this->selectedThisElement($method->payment_element)) {
     	    return false;
     	}
-        $cart->_dataValidated="1";
-    	$lang = JFactory::getLanguage();
-    	$filename = 'com_virtuemart';
-    	$lang->load($filename, JPATH_ADMINISTRATOR);
+      $cart->_dataValidated="1";
+//     	$lang = JFactory::getLanguage();
+//     	$filename = 'com_virtuemart';
+//     	$lang->load($filename, JPATH_ADMINISTRATOR);
+VmConfig::loadJLang('com_virtuemart',true);
+VmConfig::loadJLang('com_virtuemart_orders', TRUE);
     	$vendorId = 0;
     	$html = "";
     	if (!class_exists('VirtueMartModelOrders'))
-    	    require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
+    	    require(VMPATH_ADMIN . DS . 'models' . DS . 'orders.php');
     	$this->getPaymentCurrency($method);
    	    $q = 'SELECT `currency_code_3` FROM `#__virtuemart_currencies` WHERE `virtuemart_currency_id`="' . $method->payment_currency . '" ';
     	$db = &JFactory::getDBO();
@@ -80,23 +90,24 @@ class plgVmPaymentswed extends vmPSPlugin {
     	$dbValues['payment_currency'] = $method->payment_currency;
     	$dbValues['pub_key'] = $method->pub_key;
     	$dbValues['priv_key'] = $method->priv_key;
-        $dbValues['cancel']=$method->cancel;
-        $dbValues['url']=$method->url;
-        $dbValues['return']=$method->return;
+      $dbValues['cancel']=$method->cancel;
+      $dbValues['url']=$method->url;
+      $dbValues['return']=$method->return;
     	$this->storePSPluginInternalData($dbValues);
     	$html = '<table>' . "\n";
     	$html .= $this->getHtmlRow('SWED_PAYMENT_INFO', $dbValues['payment_name']);
     	if (!empty($payment_info)) {
-    	    $lang = & JFactory::getLanguage();
+    	    $lang = JFactory::getLanguage();
     	   if ($lang->hasKey($method->payment_info)) {
-    	       $payment_info = JTExt::_($method->payment_info);
+    	       $payment_info = vmText::_($method->payment_info);
     	   } else {
-    	        $payment_info =  $method->payment_info;
+    	        $payment_info = $method->payment_info;
     	   }
     	    $html .= $this->getHtmlRow($bank_UPPER._PAYMENTINFO, $payment_info);
     	}
-    	if (!class_exists('VirtueMartModelCurrency'))
-    	    require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
+    	if (!class_exists('VirtueMartModelCurrency')) {
+    	    require(VMPATH_ADMIN . DS . 'models' . DS . 'currency.php');
+          }
     	$currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
     	$html .= $this->getHtmlRow('SWED_ORDER_NUMBER', $order['details']['BT']->order_number);
     	$html .= $this->getHtmlRow('SWED_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
@@ -122,14 +133,15 @@ class plgVmPaymentswed extends vmPSPlugin {
         $html.=("</br>");
         $html.= ('<input type="submit" value="'.JText::_("VMPAYMENT_SWED_SUBMIT").'"/>' );
         $html.=( '</form>' );
-        		JRequest::setVar ('html', $html);
-
+        		vRequest::setVar ('html', $html);
+return TRUE;
 //    	return $this->processConfirmedOrderPaymentResponse(true, $cart, $order, $html, , $method->status_canceled);
     }
     function plgVmOnShowOrderBEPayment($virtuemart_order_id, $virtuemart_payment_id) {
    	if (!$this->selectedThisByMethodId($virtuemart_payment_id)) {
     	    return null; // Another method was selected, do nothing
     	}
+      VmConfig::loadJLang('com_virtuemart');
     	$db = JFactory::getDBO();
     	$q = 'SELECT * FROM `' . $this->_tablename . '` '
     		. 'WHERE `virtuemart_order_id` = ' . $virtuemart_order_id;
@@ -151,7 +163,7 @@ class plgVmPaymentswed extends vmPSPlugin {
     function plgVmOnStoreInstallPaymentPluginTable($jplugin_id) {
 	   return $this->onStoreInstallPluginTable($jplugin_id);
     }
-    public function plgVmOnSelectCheckPayment(VirtueMartCart $cart) {
+    public function plgVmOnSelectCheckPayment(VirtueMartCart $cart, &$msg) {
 	   return $this->OnSelectCheck($cart);
     }
     public function plgVmDisplayListFEPayment(VirtueMartCart $cart, $selected = 0, &$htmlIn) {
@@ -169,13 +181,23 @@ class plgVmPaymentswed extends vmPSPlugin {
     	}
     	 $this->getPaymentCurrency($method);
     	$paymentCurrencyId = $method->payment_currency;
+      return;
     }
+  function plgVmOnCheckAutomaticSelectedPayment (VirtueMartCart $cart, array $cart_prices = array(), &$paymentCounter) {
+		return $this->onCheckAutomaticSelected ($cart, $cart_prices, $paymentCounter);
+	}
+	public function plgVmOnShowOrderFEPayment ($virtuemart_order_id, $virtuemart_paymentmethod_id, &$payment_name) {
+		$this->onShowOrderFE ($virtuemart_order_id, $virtuemart_paymentmethod_id, $payment_name);
+	}
     function plgVmonShowOrderPrintPayment($order_number, $method_id) {
 	   return $this->onShowOrderPrint($order_number, $method_id);
     }
     function plgVmDeclarePluginParamsPayment($name, $id, &$data) {
 	   return $this->declarePluginParams('payment', $name, $id, $data);
     }
+  function plgVmDeclarePluginParamsPaymentVM3( &$data) {
+		return $this->declarePluginParams('payment', $data);
+	}
     function plgVmSetOnTablePluginParamsPayment($name, $id, &$table) {
 	   return $this->setOnTablePluginParams($name, $id, $table);
     }
@@ -252,7 +274,8 @@ class plgVmPaymentswed extends vmPSPlugin {
             }
             $cart->emptyCart();
             $url=JROUTE::_(JURI::root() .'index.php?option=com_virtuemart&view=orders');
-            echo '<head><meta http-equiv="Refresh" content="5;URL='.$url.'"></head>';
+            header('Location: '.$url); //            echo '<head><meta http-equiv="Refresh" content="5;URL='.$url.'"></head>';
+exit;
             return true;
    }
     protected function checkConditions($cart, $method, $cart_prices) {
