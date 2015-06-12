@@ -2,7 +2,7 @@
 <extension version="2.5" type="plugin" group="vmshipment" method="upgrade">
     <name>Itella SmartPOST module for Virtuemart</name>
     <creationDate>10.06.2015</creationDate>
-    <author>Matis Halmann - http://www.e-abi.ee/ (kuni 2014) & Joomla Eesti kogukond (alates 2015)</author>
+    <author>Matis Halmann - http://www.e-abi.ee/ (kuni 2014) --- Joomla Eesti kogukond (alates 2015)</author>
     <authorUrl>http://www.eraser.ee/</authorUrl>
     <copyright>Copyright (C) 2015.</copyright>
     <license>GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html</license>
